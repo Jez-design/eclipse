@@ -1,3 +1,10 @@
+v3.6.8
+- Improvement: Added WPML translation support for all customizer's strings through wpml-config.xml file.
+- Fix: Elementor Pro's Header-Footer theme builder layouts does not override theme's Header-Footer builder layouts.
+- Fix: Bulk action selection not working on any WordPress list table when theme's "Get Started" notice is active.
+- Fix: Header Footer Widgets: Off-canvas content is displaying over Legacy widget's preview in the customizer for WordPress 5.8.
+- Deprecated: Header Footer Widgets - Deprecated design specific options for better compatibility with WordPress 5.8. ( https://wpastra.com/docs/enable-astra-widget-design-options/ )
+
 v3.6.7
 - Improvement: Rendered Addon dependent toggle code conditionally and removed unwanted code.
 - Improvement: Changed the screen reader text tag from 'h2' to 'span' for better SEO.

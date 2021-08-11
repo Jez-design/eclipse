@@ -108,6 +108,10 @@ if ( ! class_exists( 'Astra_Theme_Background_Updater' ) ) {
 				'astra_remove_elementor_toc_margin',
 				'astra_clear_all_assets_cache',
 			),
+			'3.6.8' => array(
+				'astra_set_removal_widget_design_options_flag',
+				'astra_clear_all_assets_cache',
+			),
 		);
 
 		/**

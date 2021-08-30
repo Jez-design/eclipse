@@ -471,6 +471,9 @@ function cerber_settings_config( $args = array() ) {
 					'label'     => __( 'Specify REST API namespaces to be allowed if REST API is disabled. One string per line.', 'wp-cerber' ),
 					'doclink'   => 'https://wpcerber.com/restrict-access-to-wordpress-rest-api/',
 					'enabler'   => array( 'norest' ),
+					'callback_under' => function () {
+						return '<a href="' . cerber_admin_link( 'traffic', array( 'filter_wp_type' => 520 ) ) . '">' . __( 'View all REST API requests', 'wp-cerber' ) . '</a> | <a href="' . cerber_admin_link( 'activity', array( 'filter_activity' => 70 ) ) . '">' . __( 'View denied REST API requests', 'wp-cerber' ) . '</a>';
+					}
 				),
 			),
 		),
@@ -1239,6 +1242,31 @@ function cerber_settings_config( $args = array() ) {
 					'title' => __( 'Other forms', 'wp-cerber' ),
 					'label' => __( 'Protect all forms on the website with bot detection engine', 'wp-cerber' ),
 					'type'  => 'checkbox',
+					'callback_under' => function () {
+						if ( ! defined( 'CERBER_DISABLE_SPAM_FILTER' ) ) {
+							return '';
+						}
+
+						$list = explode( ',', (string) CERBER_DISABLE_SPAM_FILTER );
+						$titles = array();
+						$home = cerber_get_site_url();
+
+						foreach ( $list as $pid ) {
+							if ( $t = get_the_title( $pid ) ) {
+								$titles [] = '<a href="' . $home . '/?p=' . (int) $pid . '" target="_blank">' . $t . '</a> (ID ' . $pid . ')';
+							}
+						}
+
+						if ( $titles ) {
+							$ret = '<p>Forms on the following pages are not analyzed: form submissions will be denied by the anti-spam engine.</p>';
+							$ret .= '<ul style="margin-bottom: 0;"><li>' . implode( '</li><li>', $titles ) . '</li></ul>';
+						}
+						else {
+							$ret = 'Note: you have specified the CERBER_DISABLE_SPAM_FILTER constant, but no pages with given IDs found.';
+						}
+
+						return $ret;
+					}
 				),
 			)
 		),

@@ -219,11 +219,6 @@ function cerber_show_settings_form( $group = null ) {
 			do_settings_sections( 'cerber-' . $group ); // the same as used in add_settings_section()	$page
 
 			echo '<div style="padding-left: 220px">';
-
-			if ( $group == 'hardening' ) {
-				echo '<p><a href="' . cerber_admin_link( 'traffic', array( 'filter_wp_type' => 520 ) ) . '">View REST API requests</a> | <a href="' . cerber_admin_link( 'activity', array( 'filter_activity' => 70 ) ) . '">View denied REST API requests</a></p>';
-			}
-
 			//submit_button();
 			echo crb_admin_submit_button();
 			echo '</div>';
@@ -237,52 +232,51 @@ function cerber_show_settings_form( $group = null ) {
 }
 
 /**
- * Generates HTML for a single input field on the settings page.
- * Prepares values to display.
+ * Generates HTML for a single input field on the admin settings page.
+ * Prepares setting value to display.
  *
- * @param $args
+ * @param array $config Setting field config
  */
-function cerber_field_show( $args ) {
+function cerber_field_show( $config ) {
 
-	//$settings = get_site_option( 'cerber-' . $args['group'] );
 	$settings = crb_get_settings();
 
 	$pre = '';
 	$value = '';
 	$atts = '';
 
-	$label = crb_array_get( $args, 'label', '' );
+	$label = crb_array_get( $config, 'label', '' );
 
-	if ( ! empty( $args['doclink'] ) ) {
-		$label .= '&nbsp; <a class="crb-no-wrap" target="_blank" href="' . $args['doclink'] . '">' . __( 'Know more', 'wp-cerber' ) . '</a>';
+	if ( ! empty( $config['doclink'] ) ) {
+		$label .= '&nbsp; <a class="crb-no-wrap" target="_blank" href="' . $config['doclink'] . '">' . __( 'Know more', 'wp-cerber' ) . '</a>';
 	}
 
-	$placeholder = esc_attr( crb_array_get( $args, 'placeholder', '' ) );
+	$placeholder = esc_attr( crb_array_get( $config, 'placeholder', '' ) );
 	if ( $placeholder ) {
 		$atts .= ' placeholder="' . $placeholder . '" ';
 	}
 
-	if ( isset( $args['disabled'] ) ) {
+	if ( isset( $config['disabled'] ) ) {
 		$atts .= ' disabled="disabled" ';
 	}
 
-	if ( isset( $args['required'] ) ) {
+	if ( isset( $config['required'] ) ) {
 		$atts .= ' required="required" ';
 	}
 
-	if ( isset( $args['value'] ) ) {
-		$value = $args['value'];
+	if ( isset( $config['value'] ) ) {
+		$value = $config['value'];
 	}
 
-	if ( isset( $args['setting'] ) ) {
-		if ( ! $value && isset( $settings[ $args['setting'] ] ) ) {
-			$value = $settings[ $args['setting'] ];
+	if ( isset( $config['setting'] ) ) {
+		if ( ! $value && isset( $settings[ $config['setting'] ] ) ) {
+			$value = $settings[ $config['setting'] ];
 		}
 
-		if ( ( $args['setting'] == 'loginnowp' || $args['setting'] == 'loginpath' ) && ! cerber_is_permalink_enabled() ) {
+		if ( ( $config['setting'] == 'loginnowp' || $config['setting'] == 'loginpath' ) && ! cerber_is_permalink_enabled() ) {
 			$atts .= ' disabled="disabled" ';
 		}
-		if ( $args['setting'] == 'loginpath' ) {
+		if ( $config['setting'] == 'loginpath' ) {
 			$pre = cerber_get_home_url() . '/';
 			$value = urldecode( $value );
 		}
@@ -290,29 +284,29 @@ function cerber_field_show( $args ) {
 
 	$value = crb_attr_escape( $value );
 
-	if ( isset( $args['list'] ) ) {
-		$dlt = crb_array_get( $args, 'delimiter_show', $args['delimiter'] );
+	if ( isset( $config['list'] ) ) {
+		$dlt = crb_array_get( $config, 'delimiter_show', $config['delimiter'] );
 		$value = cerber_array2text( $value, $dlt );
 	}
 
-	$name_prefix = 'cerber-' . $args['group'];
-	$name = $name_prefix . '[' . $args['setting'] . ']';
+	$name_prefix = 'cerber-' . $config['group'];
+	$name = $name_prefix . '[' . $config['setting'] . ']';
 
-	if ( isset( $args['id'] ) ) {
-		$id = $args['id'];
+	if ( isset( $config['id'] ) ) {
+		$id = $config['id'];
 	}
 	else {
-		$id = 'crb-input-' . $args['setting'];
+		$id = 'crb-input-' . $config['setting'];
 	}
 
-	$class = crb_array_get( $args, 'class', '' );
+	$class = crb_array_get( $config, 'class', '' );
 
 	$data = '';
 	$ena = array();
-	if ( isset( $args['enabler'] ) ) {
-		$ena['enabler'] = 'crb-input-' . $args['enabler'][0];
-		if ( isset( $args['enabler'][1] ) ) {
-			$ena['enabler_value'] = $args['enabler'][1];
+	if ( isset( $config['enabler'] ) ) {
+		$ena['enabler'] = 'crb-input-' . $config['enabler'][0];
+		if ( isset( $config['enabler'][1] ) ) {
+			$ena['enabler_value'] = $config['enabler'][1];
 		}
 	}
 	if ( $ena ) {
@@ -321,12 +315,12 @@ function cerber_field_show( $args ) {
 		}
 	}
 
-	switch ( $args['type'] ) {
+	switch ( $config['type'] ) {
 
 		case 'limitz':
-			$s1 = $args['group'] . '-period';
-			$s2 = $args['group'] . '-number';
-			$s3 = $args['group'] . '-within';
+			$s1 = $config['group'] . '-period';
+			$s2 = $config['group'] . '-number';
+			$s3 = $config['group'] . '-within';
 
 			$html = sprintf( $label,
 				cerber_digi_field( $name_prefix . '[' . $s1 . ']', $settings[ $s1 ] ),
@@ -354,7 +348,7 @@ function cerber_field_show( $args ) {
 			break;
 
 		case 'notify':
-			$html = '<label class="crb-switch"><input class="screen-reader-text" type="checkbox" id="' . $args['setting'] . '" name="cerber-' . $args['group'] . '[' . $args['setting'] . ']" value="1" ' . checked( 1, $value, false ) . $atts . ' /><span class="crb-slider round"></span></label>'
+			$html = '<label class="crb-switch"><input class="screen-reader-text" type="checkbox" id="' . $config['setting'] . '" name="cerber-' . $config['group'] . '[' . $config['setting'] . ']" value="1" ' . checked( 1, $value, false ) . $atts . ' /><span class="crb-slider round"></span></label>'
 			        . __( 'Notify admin if the number of active lockouts above', 'wp-cerber' ) . ' ' .
 			        cerber_digi_field( $name_prefix . '[above]', $settings['above'] ) .
 			        ' <span class="crb-no-wrap">[  <a href="' . cerber_admin_link_add( array(
@@ -373,7 +367,7 @@ function cerber_field_show( $args ) {
 			$html = '<div style="display: table-cell;"><label class="crb-switch"><input class="screen-reader-text" type="checkbox" id="' . $id . '" name="' . $name . '" value="1" ' . checked( 1, $value, false ) . $atts . ' /><span class="crb-slider round"></span></label></div>';
 			//$html .= '<div style="display: table-cell;"><label for="' . $args['setting'] . '">' . $label . '</label></div><i ' . $data . '></i>';
 			if ( $label ) {
-				$html .= '<div style="display: table-cell;"><label for="' . $args['setting'] . '">' . $label . '</label></div>';
+				$html .= '<div style="display: table-cell;"><label for="' . $config['setting'] . '">' . $label . '</label></div>';
 			}
 			if ( $data ) {
 				$html .= '<i ' . $data . '></i>';
@@ -383,12 +377,12 @@ function cerber_field_show( $args ) {
 		case 'textarea':
 			$html = '<textarea class="large-text crb-monospace" id="' . $id . '" name="' . $name . '" ' . $atts . $data . '>' . $value . '</textarea>';
 			if ( $label ) {
-				$html .= '<br/><label class="crb-below" for="' . $args['setting'] . '">' . $label . '</label>';
+				$html .= '<br/><label class="crb-below" for="' . $config['setting'] . '">' . $label . '</label>';
 			}
 			break;
 
 		case 'select':
-			$html = cerber_select( $name, $args['set'], $value, $class, $id, '', $placeholder, $ena );
+			$html = cerber_select( $name, $config['set'], $value, $class, $id, '', $placeholder, $ena );
 			if ( $label ) {
 				$html .= '<br/><label class="crb-below">' . $label . '</label>';
 			}
@@ -405,26 +399,26 @@ function cerber_field_show( $args ) {
 				$label = '<p class="crb-label-above"><label for="' . $name . '">' . $label . '</label></p>';
 			}
 			$html = '<div class="crb-checkbox_set" style="line-height: 2em;" ' . $data . '>' . $label;
-			foreach ( $args['set'] as $key => $item ) {
+			foreach ( $config['set'] as $key => $item ) {
 				$v = ( ! empty( $value[ $key ] ) ) ? $value[ $key ] : 0;
 				$html .= '<input type="checkbox" value="1" name="' . $name . '[' . $key . ']" ' . checked( 1, $v, false ) . $atts . '/>' . $item . '<br />';
 			}
 			$html .= '</div>';
 			break;
 		case 'reptime':
-			$html = cerber_time_select( $args, $settings ) . '<i ' . $data . '></i>';
+			$html = cerber_time_select( $config, $settings ) . '<i ' . $data . '></i>';
 			break;
 		case 'timepicker':
-			$html = '<input class="crb-tpicker" type="text" size="7" id="' . $args['setting'] . '" name="' . $name . '" value="' . $value . '"' . $atts . '/>';
-			$html .= ' <label for="' . $args['setting'] . '">' . $label . '</label>';
+			$html = '<input class="crb-tpicker" type="text" size="7" id="' . $config['setting'] . '" name="' . $name . '" value="' . $value . '"' . $atts . '/>';
+			$html .= ' <label for="' . $config['setting'] . '">' . $label . '</label>';
 			break;
 		case 'hidden':
-			$html = '<input type="hidden" id="' . $args['setting'] . '" class="crb-hidden-field" name="' . $name . '" value="' . $value . '" />';
+			$html = '<input type="hidden" id="' . $config['setting'] . '" class="crb-hidden-field" name="' . $name . '" value="' . $value . '" />';
 			break;
 		case 'text':
 		default:
 
-			$type = crb_array_get( $args, 'type', 'text' );
+			$type = crb_array_get( $config, 'type', 'text' );
 			if ( in_array( $type, array( 'url', 'number', 'email' ) ) ) {
 				$input_type = $type;
 			}
@@ -440,8 +434,8 @@ function cerber_field_show( $args ) {
 				$class = 'crb-digits';
 			}
 
-			$size = crb_array_get( $args, 'size', $size );
-			$maxlength = crb_array_get( $args, 'maxlength', $size );
+			$size = crb_array_get( $config, 'size', $size );
+			$maxlength = crb_array_get( $config, 'maxlength', $size );
 
 			if ( $maxlength ) {
 				$maxlength = ' maxlength="' . $maxlength . '" ';
@@ -458,46 +452,56 @@ function cerber_field_show( $args ) {
 			}
 
 
-			if ( isset( $args['pattern'] ) ) {
-				$atts .= ' pattern="' . $args['pattern'] . '"';
+			if ( isset( $config['pattern'] ) ) {
+				$atts .= ' pattern="' . $config['pattern'] . '"';
 			}
 
-			if ( isset( $args['attr'] ) ) {
-				foreach ( $args['attr'] as $at_name => $at_value ) {
+			if ( isset( $config['attr'] ) ) {
+				foreach ( $config['attr'] as $at_name => $at_value ) {
 					$atts .= ' ' . $at_name . ' ="' . $at_value . '" ';
 				}
 			}
 			else {
-				if ( isset( $args['title'] ) ) {
-					$atts .= ' title="' . $args['title'] . '"';
+				if ( isset( $config['title'] ) ) {
+					$atts .= ' title="' . $config['title'] . '"';
 				}
 			}
 
-			$html = $pre . '<input type="' . $input_type . '" id="' . $args['setting'] . '" name="' . $name . '" value="' . $value . '"' . $atts . ' class="' . $class . '" ' . $size . $maxlength . $atts . $data . ' />';
+			$html = $pre . '<input type="' . $input_type . '" id="' . $config['setting'] . '" name="' . $name . '" value="' . $value . '"' . $atts . ' class="' . $class . '" ' . $size . $maxlength . $atts . $data . ' />';
 
 			if ( $label ) {
-				if ( ! $size || crb_array_get( $args, 'label_pos' ) == 'below' ) {
-					$label = '<br/><label class="crb-below" for="' . $args['setting'] . '">' . $label . '</label>';
+				if ( ! $size || crb_array_get( $config, 'label_pos' ) == 'below' ) {
+					$label = '<br/><label class="crb-below" for="' . $config['setting'] . '">' . $label . '</label>';
 				}
 				else {
-					$label = ' <label for="' . $args['setting'] . '">' . $label . '</label>';
+					$label = ' <label for="' . $config['setting'] . '">' . $label . '</label>';
 				}
 			}
 			$html .= $label;
 			break;
 	}
 
-	if ( ! empty( $args['field_switcher'] ) ) {
-		$name = 'cerber-' . $args['group'] . '[' . $args['setting'] . '-enabled]';
+	if ( ! empty( $config['field_switcher'] ) ) {
+		$name = 'cerber-' . $config['group'] . '[' . $config['setting'] . '-enabled]';
 		$value = 0;
-		if ( isset( $settings[ $args['setting'] . '-enabled' ] ) ) {
-			$value = $settings[ $args['setting'] . '-enabled' ];
+		if ( isset( $settings[ $config['setting'] . '-enabled' ] ) ) {
+			$value = $settings[ $config['setting'] . '-enabled' ];
 		}
-		$checkbox = '<label class="crb-switch"><input class="screen-reader-text" type="checkbox" id="' . $args['setting'] . '-enabled" name="' . $name . '" value="1" ' . checked( 1, $value, false ) . ' /><span class="crb-slider round"></span></label><span>' . $args['field_switcher'].'</span>';
+		$checkbox = '<label class="crb-switch"><input class="screen-reader-text" type="checkbox" id="' . $config['setting'] . '-enabled" name="' . $name . '" value="1" ' . checked( 1, $value, false ) . ' /><span class="crb-slider round"></span></label><span>' . $config['field_switcher'] . '</span>';
 		$html = $checkbox . ' ' . $html;
 	}
 
-	echo '<div class="crb-settings-field">' . $html . "</div>\n";
+	echo '<div class="crb-settings-field">';
+	echo $html;
+
+	if ( ! empty( $config['callback_under'] )
+	     && $content = call_user_func( $config['callback_under'] ) ) {
+		echo '<div class="crb-settings-under">';
+		echo $content;
+		echo '</div>';
+	}
+
+	echo "</div>\n";
 }
 
 function cerber_role_select( $name = 'cerber-roles', $selected = array(), $class = '', $multiple = '', $placeholder = '', $width = '75%' ) {

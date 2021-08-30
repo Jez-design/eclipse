@@ -261,7 +261,7 @@ class UpdraftPlus_Backup {
 
 		// Firstly, make sure that the temporary file is not already being written to - which can happen if a resumption takes place whilst an old run is still active
 		$zip_name = $full_path.'.tmp';
-		$time_mod = (int) @filemtime($zip_name);// phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
+		$time_mod = file_exists($zip_name) ? filemtime($zip_name) : 0;
 		if (file_exists($zip_name) && $time_mod>100 && ($time_now-$time_mod)<30) {
 			UpdraftPlus_Job_Scheduler::terminate_due_to_activity($zip_name, $time_now, $time_mod);
 		}
@@ -2764,6 +2764,7 @@ class UpdraftPlus_Backup {
 			$this->stow("# Uploads URL: ".untrailingslashit($wp_upload_dir['baseurl'])."\n");
 			$this->stow("# Table prefix: ".$this->table_prefix_raw."\n");
 			$this->stow("# Filtered table prefix: ".$this->table_prefix."\n");
+			$this->stow("# ABSPATH: ".trailingslashit(ABSPATH)."\n");
 			$this->stow("# Site info: multisite=".(is_multisite() ? '1' : '0')."\n");
 			$this->stow("# Site info: sql_mode=".$this->wpdb_obj->get_var('SELECT @@SESSION.sql_mode')."\n");
 			$this->stow("# Site info: end\n");

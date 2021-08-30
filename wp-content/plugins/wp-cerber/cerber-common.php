@@ -926,15 +926,23 @@ function cerber_is_rest_url() {
 
 	$ret = false;
 
-	$path = CRB_Request::get_request_path();
+	$request_path = CRB_Request::get_request_path();
 	list( $root, $dir ) = crb_parse_site_url();
-	$rest_prefix = $dir . '/' . rest_get_url_prefix() . '/';
+	//$rest_prefix = $dir . '/' . rest_get_url_prefix() . '/';
+	$rest_prefix = $dir . '/' . rest_get_url_prefix();
 	$rp_len = strlen( $rest_prefix );
 
-	if ( 0 === strpos( substr( $path, 0, $rp_len ), $rest_prefix ) ) {
-		$ru_len = strlen( crb_get_rest_url() );
-		if ( 0 === strpos( substr( $root . $path, 0, $ru_len ), crb_get_rest_url() ) ) {
+	//if ( 0 === strpos( substr( $request_path, 0, $rp_len ), $rest_prefix ) ) {
+	if ( substr( $request_path, 0, $rp_len ) == $rest_prefix ) {
+		if ( $request_path[ $rp_len ] == '?' ) { // An exception for: WordPress processes /wp-json? as a REST API request
 			$ret = true;
+		}
+		else {
+			$url_len = strlen( crb_get_rest_url() );
+			//if ( 0 === strpos( substr( $root . $request_path, 0, $ru_len ), crb_get_rest_url() ) ) {
+			if ( substr( $root . $request_path, 0, $url_len ) == crb_get_rest_url() ) {
+				$ret = true;
+			}
 		}
 	}
 
@@ -1007,6 +1015,18 @@ function cerber_is_wp_ajax( $use_filter = false ) {
 	// @since 8.1.3
 	if ( $use_filter && function_exists( 'wp_doing_ajax' ) ) {
 		return wp_doing_ajax();
+	}
+
+	return false;
+}
+
+/**
+ * @return bool True if it's the user edit/profile WordPress admin page
+ */
+function is_admin_user_edit() {
+	if ( ( defined( 'IS_PROFILE_PAGE' ) && IS_PROFILE_PAGE )
+	     || CRB_Request::is_script( array( '/wp-admin/user-edit.php', '/wp-admin/profile.php' ) ) ) {
+		return true;
 	}
 
 	return false;
@@ -1206,6 +1226,11 @@ function crb_get_rest_path() {
 	return $ret;
 }
 
+/**
+ *
+ * @return string Full URL including scheme, host, path and trailing slash
+ *
+ */
 function crb_get_rest_url() {
 	static $ret;
 
@@ -1300,6 +1325,27 @@ function crb_is_user_logged_in() {
 	}
 
 	return is_user_logged_in();
+}
+
+/**
+ * Returns user session token.
+ *
+ * OMG: WordPress stores the same token in two different cookies.
+ *
+ * @return string
+ *
+ * @since 8.9.1
+ */
+function crb_get_session_token() {
+
+	// First, trying the default cookie:  LOGGED_IN_COOKIE
+	if ( ! $token = wp_get_session_token() ) {
+		// Trying another, backup cookie: SECURE_AUTH_COOKIE or AUTH_COOKIE
+		$cookie = wp_parse_auth_cookie();
+		$token = crb_array_get( $cookie, 'token', '' );
+	}
+
+	return $token;
 }
 
 /**
@@ -1839,7 +1885,7 @@ function cerber_is_admin_page( $force = false, $params = array() ) {
  * @return string
  */
 function cerber_ago_time( $time ) {
-	$diff = (int) abs( time() - $time );
+	$diff = abs( time() - (int) $time );
 	if ( $diff < MINUTE_IN_SECONDS ) {
 		$secs = ( $diff <= 1 ) ? 1 : $diff;
 		/* translators: Time difference between two dates, in seconds (sec=second). 1: Number of seconds */
@@ -2386,7 +2432,7 @@ function cerber_db_make_where( $table, $key_fields ) {
 function cerber_db_prepare( $table, $field, &$value ) {
 	$type = '';
 
-	if ( isset( CERBER_DB_TYPES[ $table ][ $field ] ) ) {
+	if ( ! empty( CERBER_DB_TYPES[ $table ][ $field ] ) ) {
 		$type = CERBER_DB_TYPES[ $table ][ $field ];
 	}
 

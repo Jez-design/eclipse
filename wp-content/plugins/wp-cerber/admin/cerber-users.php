@@ -601,7 +601,7 @@ function crb_destroy_user_sessions( $user_id ) {
 function crb_admin_is_current_session( $session_id ) {
 	static $st = null;
 	if ( $st === null ) {
-		$st = wp_get_session_token();
+		$st = crb_get_session_token();
 	}
 
 	return ( $session_id === cerber_hash_token( $st ) );
@@ -614,15 +614,17 @@ function crb_admin_get_user_cell( $user_id = null, $base_url = '', $text = '', $
 		return '';
 	}
 
-	if ( isset( $user_cache[ $user_id ] ) ) {
+	$key = $user_id . '-' . sha1( (string) $text . ' ' . (string) $label );
 
-		return $user_cache[ $user_id ];
+	if ( isset( $user_cache[ $key ] ) ) {
+
+		return $user_cache[ $key ];
 
 	}
 
 	if ( ! $user = get_userdata( $user_id ) ) {
 		if ( ! $user_data = cerber_get_set( 'user_deleted', $user_id ) ) {
-			$user_cache[ $user_id ] = 'UID ' . $user_id;
+			$user_cache[ $key ] = 'UID ' . $user_id;
 
 			return '';
 		}
@@ -662,9 +664,9 @@ function crb_admin_get_user_cell( $user_id = null, $base_url = '', $text = '', $
 		$avatar = '';
 	}
 
-	$user_cache[ $user_id ] = '<table class="crb-avatar"><tr>' . $avatar . '<td>' . $ret . $text . '</td></tr></table>';
+	$user_cache[ $key ] = '<table class="crb-avatar"><tr>' . $avatar . '<td>' . $ret . $text . '</td></tr></table>';
 
-	return $user_cache[ $user_id ];
+	return $user_cache[ $key ];
 }
 
 function crb_admin_show_sessions() {

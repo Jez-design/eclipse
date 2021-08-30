@@ -4007,9 +4007,9 @@ msgstr "Midden"
 
 #: cerber-load.php:4458
 msgid "If you believe you should be able to perform this request, please let us know."
-msgstr ""
+msgstr "Meen je dit verzoek te moeten kunnen uitvoeren, laat het ons weten."
 
 #: cerber-load.php:4457
 msgid "Your request looks suspiciously similar to automated requests from spam posting software or it has been denied by a security policy configured by the website administrator."
-msgstr ""
+msgstr "Je verzoek lijkt te veel op een geautomatiseerd verzoek van spam-software óf is geweigerd door een beveiligingsinstelling van de beheerder."
 

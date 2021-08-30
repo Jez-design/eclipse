@@ -1,0 +1,8 @@
+2021-08-25T06:43:26+00:00 CRITICAL Uncaught Error: Call to undefined method stdClass::isGroup() in C:\MAMP\htdocs\eclipse.cl\wp-content\plugins\smart-slider-3\Nextend\SmartSlider3\Application\Frontend\Slider\ViewIframe.php:40
+Stack trace:
+#0 C:\MAMP\htdocs\eclipse.cl\wp-content\plugins\smart-slider-3\Nextend\SmartSlider3\Application\Frontend\Slider\ControllerPreRenderSlider.php(29): Nextend\SmartSlider3\Application\Frontend\Slider\ViewIframe->display()
+#1 [internal function]: Nextend\SmartSlider3\Application\Frontend\Slider\ControllerPreRenderSlider->actionIframe()
+#2 C:\MAMP\htdocs\eclipse.cl\wp-content\plugins\smart-slider-3\Nextend\Framework\Controller\AbstractController.php(93): call_user_func_array(Array, Array)
+#3 C:\MAMP\htdocs\eclipse.cl\wp-content\plugins\smart-slider-3\Nextend\Framework\Application\AbstractApplicationType.php(88): Nextend\Framework\Controller\AbstractController->doAction('iframe', Array)
+#4 C:\MAMP\htdocs\eclipse.cl\wp-content\plugins\smart-slider-3\Nextend\SmartSlider3\Platform\WordPress\WordPressFrontend.php(31): N en C:\MAMP\htdocs\eclipse.cl\wp-content\plugins\smart-slider-3\Nextend\SmartSlider3\Application\Frontend\Slider\ViewIframe.php en la línea 40
+

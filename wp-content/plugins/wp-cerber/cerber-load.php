@@ -78,7 +78,7 @@ const WP_COMMENT_SCRIPT = 'wp-comments-post.php';
 
 const GOO_RECAPTCHA_URL = 'https://www.google.com/recaptcha/api/siteverify';
 
-const CERBER_REQ_PHP = '5.6';
+const CERBER_REQ_PHP = '7.0';
 const CERBER_REQ_WP = '4.9';
 const CERBER_TECH = 'https://cerber.tech/';
 
@@ -1542,7 +1542,7 @@ function crb_sessions_kill( $tokens, $user_id = null, $admin = true ) {
 	$errors = 0;
 
 	// Prevent termination the current admin session
-	if ( $token = wp_get_session_token() ) {
+	if ( $token = crb_get_session_token() ) {
 		unset( $kill[ cerber_hash_token( $token ) ] );
 	}
 
@@ -1975,8 +1975,12 @@ add_filter( 'wpmu_validate_user_signup', function ( $signup_data ) {
 }, PHP_INT_MAX );
 
 // Filter out prohibited usernames
-add_filter( 'illegal_user_logins', function () {
-	return (array) crb_get_settings( 'prohibited' );
+add_filter( 'illegal_user_logins', function ( $list ) {
+	if ( ! is_admin_user_edit() ) {
+		$list = (array) crb_get_settings( 'prohibited' );
+	}
+
+	return $list;
 }, PHP_INT_MAX );
 
 add_filter( 'option_users_can_register', function ( $value ) {
@@ -2842,11 +2846,20 @@ function cerber_antibot_enabled( $location ) {
 }
 
 /**
- * Print out the antibot/antispam jQuery code
  *
  * @param $location string|array Location (setting)
+ *
  */
-function cerber_antibot_code($location) {
+function cerber_antibot_code( $location ) {
+
+	if ( defined( 'CERBER_DISABLE_SPAM_FILTER' )
+	     && is_singular() ) {
+		$list = explode( ',', (string) CERBER_DISABLE_SPAM_FILTER );
+		$pid = (int) get_queried_object_id();
+		if ( in_array( $pid, $list ) ) {
+			return;
+		}
+	}
 
 	if ( ! cerber_antibot_enabled( $location ) ) {
 		return;
@@ -2854,57 +2867,46 @@ function cerber_antibot_code($location) {
 
 	$values = cerber_antibot_gene();
 
-	if ( empty( $values ) || !is_array( $values ) ) {
+	if ( empty( $values ) || ! is_array( $values ) ) {
 		return;
 	}
 
 	?>
-	<script type="text/javascript">
+    <script type="text/javascript">
         jQuery(document).ready(function ($) {
-            //$( document ).ajaxStart(function() {
-            //});
 
-			<?php // Append form fields directly to the all forms ?>
-
-            for (var i = 0; i < document.forms.length; ++i) {
-                var form = document.forms[i];
+            for (let i = 0; i < document.forms.length; ++i) {
+                let form = document.forms[i];
 				<?php
 				foreach ( $values[0] as $value ) {
-					echo 'if ($(form).attr("method") != "get") { $(form).append(\'<input type="hidden" name="' . $value[0] . '" value="' . $value[1] . '" />\'); }'."\n";
+					echo 'if ($(form).attr("method") != "get") { $(form).append(\'<input type="hidden" name="' . $value[0] . '" value="' . $value[1] . '" />\'); }' . "\n";
 				}
 				?>
             }
 
-			<?php // Ordinary submit ?>
-
             $(document).on('submit', 'form', function () {
 				<?php
 				foreach ( $values[0] as $value ) {
-					echo 'if ($(this).attr("method") != "get") { $(this).append(\'<input type="hidden" name="' . $value[0] . '" value="' . $value[1] . '" />\'); }'."\n";
+					echo 'if ($(this).attr("method") != "get") { $(this).append(\'<input type="hidden" name="' . $value[0] . '" value="' . $value[1] . '" />\'); }' . "\n";
 				}
 				?>
                 return true;
             });
 
-			<?php // Pure AJAX submit with two different types of form data (object and string) ?>
-
             jQuery.ajaxSetup({
                 beforeSend: function (e, data) {
-
-                    //console.log(Object.getOwnPropertyNames(data).sort());
-                    //console.log(data.type);
 
                     if (data.type !== 'POST') return;
 
                     if (typeof data.data === 'object' && data.data !== null) {
 						<?php
 						foreach ( $values[0] as $value ) {
-							echo 'data.data.append("' . $value[0] . '", "' . $value[1] . '");'."\n";
+							echo 'data.data.append("' . $value[0] . '", "' . $value[1] . '");' . "\n";
 						}
 						?>
                     }
                     else {
-                        data.data =  data.data + '<?php
+                        data.data = data.data + '<?php
 							foreach ( $values[0] as $value ) {
 								echo '&' . $value[0] . '=' . $value[1];
 							}
@@ -2914,7 +2916,7 @@ function cerber_antibot_code($location) {
             });
 
         });
-	</script>
+    </script>
 	<?php
 
 }

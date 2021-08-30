@@ -17,6 +17,8 @@ class UpdraftPlus_BackupModule_googledrive extends UpdraftPlus_BackupModule {
 	private $callback_url;
 	
 	private $multi_directories = array();
+	
+	private $registered_prune = false;
 
 	/**
 	 * Constructor
@@ -640,9 +642,8 @@ class UpdraftPlus_BackupModule_googledrive extends UpdraftPlus_BackupModule {
 				$parent_id = key($parent_ids);
 				if (count($parent_ids) > 1) {
 					$this->log('there appears to be more than one folder: '.implode(', ', array_keys($parent_ids)));
-					static $registered_prune = false;
-					if (!$registered_prune) {
-						$registered_prune = true;
+					if (!$this->registered_prune) {
+						$this->registered_prune = true;
 						$this->multi_directories = $parent_ids;
 						add_action('updraftplus_prune_retained_backups_finished', array($this, 'prune_retained_backups_finished'));
 					}
@@ -1445,6 +1446,8 @@ class UpdraftPlus_BackupModule_googledrive extends UpdraftPlus_BackupModule {
 	 * @return String - the template, ready for substitutions to be carried out
 	 */
 	public function get_configuration_template() {
+		global $updraftplus;
+		
 		$classes = $this->get_css_classes();
 		ob_start();
 		?>
@@ -1482,7 +1485,7 @@ class UpdraftPlus_BackupModule_googledrive extends UpdraftPlus_BackupModule {
 				{{/if}}
 							<br>
 							<em>
-								<a href="<?php echo apply_filters("updraftplus_com_link", "https://updraftplus.com/shop/updraftplus-premium/");?>" target="_blank">
+								<a href="<?php echo $updraftplus->get_url('premium');?>" target="_blank">
 									<?php echo __('To be able to set a custom folder name, use UpdraftPlus Premium.', 'updraftplus');?>
 								</a>
 							</em>

@@ -626,6 +626,7 @@ final class CRB_2FA {
 	}
 
 	static function delete_2fa( $uid, $all = false ) {
+
 		if ( ! $uid = absint( $uid ) ) {
 			return;
 		}
@@ -647,7 +648,7 @@ final class CRB_2FA {
 			return self::$token;
 		}
 
-		return wp_get_session_token();
+		return crb_get_session_token();
 	}
 
 	static function cerber_2fa_form() {

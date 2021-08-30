@@ -532,11 +532,11 @@ add_action( 'wp_ajax_cerber_ref_upload', function () {
 		}
 
 		if ( ! cerber_check_extension( $_FILES['refile']['name'], array( 'zip' ) ) ) {
-			$error = 'Incorrect file format';
+			$error = __( 'This type of file is not supported. Please upload a ZIP archive.', 'wp-cerber' );
 		}
 
 		if ( cerber_detect_exec_extension( $_FILES['refile']['name'] ) ) {
-			$error = 'Incorrect file format';
+			$error = __( 'Executable files are not supported. Please upload a ZIP archive.', 'wp-cerber' );
 		}
 
 		if ( false !== strpos( $_FILES['refile']['name'], '/' ) ) {

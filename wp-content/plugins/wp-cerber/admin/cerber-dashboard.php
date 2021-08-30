@@ -3259,13 +3259,16 @@ function cerber_admin_footer() {
 	crb_load_wp_js();
 
     // Add buttons to the user profile page
+
     $uid = 0;
 	if ( defined( 'IS_PROFILE_PAGE' ) && IS_PROFILE_PAGE ) {
 		$uid = get_current_user_id();
 	}
-    elseif ( ! empty( $_GET['user_id'] ) && strpos( $_SERVER['SCRIPT_NAME'], 'user-edit.php' ) ) {
+    //elseif ( ! empty( $_GET['user_id'] ) && strpos( $_SERVER['SCRIPT_NAME'], 'user-edit.php' ) ) {
+    elseif ( ! empty( $_GET['user_id'] ) && is_admin_user_edit() ) {
 		$uid = absint( $_GET['user_id'] );
 	}
+
 	if ( $uid ) {
 		$user_links = '<a href="' . cerber_admin_link( 'activity', array( 'filter_user' => $uid ) ) . '" class="page-title-action">' . __( 'View Activity', 'wp-cerber' ) . '</a>';
 		if ( $uss = crb_sessions_get_num( $uid ) ) {

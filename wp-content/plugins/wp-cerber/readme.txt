@@ -3,9 +3,9 @@ Contributors: gioni
 Tags: security, malware scanner, antispam, firewall, limit login attempts, custom login url, login, recaptcha, captcha, activity, log, logging, access list
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=SQ5EC8WQP654Q&source=url
 Requires at least: 4.9
-Requires PHP: 5.6
+Requires PHP: 7.0
 Tested up to: 5.8
-Stable tag: 8.9
+Stable tag: 8.9.3
 License: GPLv2
 
 Protection against hacker attacks and bots. Malware scanner & integrity checker. User activity log. Antispam reCAPTCHA. Limit login attempts.
@@ -316,6 +316,15 @@ To get access to your dashboard you need to copy the WP Cerber Reset folder to t
 
 
 == Changelog ==
+
+= 8.9.3 =
+Improved: The scanner: now checksums generated using manually uploaded ZIP archives have priority over the remote ones.
+Improved: You can configure exceptions for WP Cerber's anti-spam by disabling its code on selected WordPress pages.
+Improved: New diagnostic messages were added for better troubleshooting issues with ZIP archives uploaded in the scanner.
+Fixed: A vulnerability that affects WP Cerber's two-factor authentication (2FA) mechanism.
+Fixed: A bug that prevents uploading ZIP archives on the scan results page if the filename contains multiple dots.
+Fixed: Fixed admin message "Error: Sorry, that username is not allowed." which is wrongly displayed on the user edit page while updating users with prohibited usernames.
+Fixed: Not detecting malformed REST API requests with a question mark in this format: /wp-json?
 
 = 8.9 =
 Improved: An updated scan statistic and filtering widget. Dynamically displays the most important issues with sorting.

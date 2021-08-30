@@ -1812,76 +1812,85 @@ function cerber_verify_plugins( &$progress ) {
 
 		crb_scan_debug( 'Verifying the plugin: ' . $plugins[ $plugin ]['Name'] . ' ' . $plugins[ $plugin ]['Version'] );
 
-		$plugin_hash = cerber_get_plugin_hash( $plugin_folder, $plugins[ $plugin ]['Version'] );
+		// Try to verify using local hash
 
-		if ( $plugin_hash && ! is_wp_error( $plugin_hash ) ) {
-			foreach ( $plugin_hash['files'] as $file => $hash ) {
+		$verified = cerber_verify_plugin( $plugin_folder, $plugins[ $plugin ], true );
 
-				if ( ! cerber_is_file_type_scan( $file ) ) {
-					continue;
-				}
+		if ( ! $verified ) {
 
-				$file_name = $plugins_dir . $plugin_folder . DIRECTORY_SEPARATOR . cerber_normal_path( $file );
-				$file_name_hash = sha1( $file_name );
-				$where          = 'scan_id = ' . $scan_id . ' AND file_name_hash = "' . $file_name_hash . '"';
-				$local_file     = cerber_db_get_row( 'SELECT * FROM ' . cerber_get_db_prefix() . CERBER_SCAN_TABLE . ' WHERE ' . $where );
+			// No local hash found
 
-				if ( ! $local_file ) {
-					$issues[] = array( CERBER_LDE, DIRECTORY_SEPARATOR . $plugin_folder . DIRECTORY_SEPARATOR . $file );
-					continue;
-				}
+			$plugin_hash = cerber_get_plugin_hash( $plugin_folder, $plugins[ $plugin ]['Version'] );
 
-				if ( $local_file['scan_status'] != 0 ) {
-					continue;
-				}
+			if ( $plugin_hash && ! is_wp_error( $plugin_hash ) ) {
+				foreach ( $plugin_hash['files'] as $file => $hash ) {
 
-				$short_name = cerber_get_short_name( $local_file['file_name'], $local_file['file_type'] );
+					if ( ! cerber_is_file_type_scan( $file ) ) {
+						continue;
+					}
 
-				if ( empty( $local_file['file_hash'] ) ) {
-					$issues[] = array( CERBER_NLH, $short_name, 'file' => $local_file );
-					continue;
-				}
-				$hash_match = 0;
-				if ( isset( $hash['sha256'] ) ) {
-					$repo_hash = $hash['sha256'];
-					if ( is_array( $repo_hash ) ) {
-						$file_hash_repo = 'REPO provides multiple values, none match';
-						foreach ( $repo_hash as $item ) {
-							if ( $local_file['file_hash'] == $item ) {
-								$hash_match     = 1;
-								$file_hash_repo = $item;
-								break;
+					$file_name = $plugins_dir . $plugin_folder . DIRECTORY_SEPARATOR . cerber_normal_path( $file );
+					$file_name_hash = sha1( $file_name );
+					$where = 'scan_id = ' . $scan_id . ' AND file_name_hash = "' . $file_name_hash . '"';
+					$local_file = cerber_db_get_row( 'SELECT * FROM ' . cerber_get_db_prefix() . CERBER_SCAN_TABLE . ' WHERE ' . $where );
+
+					if ( ! $local_file ) {
+						$issues[] = array( CERBER_LDE, DIRECTORY_SEPARATOR . $plugin_folder . DIRECTORY_SEPARATOR . $file );
+						continue;
+					}
+
+					if ( $local_file['scan_status'] != 0 ) {
+						continue;
+					}
+
+					$short_name = cerber_get_short_name( $local_file['file_name'], $local_file['file_type'] );
+
+					if ( empty( $local_file['file_hash'] ) ) {
+						$issues[] = array( CERBER_NLH, $short_name, 'file' => $local_file );
+						continue;
+					}
+					$hash_match = 0;
+					if ( isset( $hash['sha256'] ) ) {
+						$repo_hash = $hash['sha256'];
+						if ( is_array( $repo_hash ) ) {
+							$file_hash_repo = 'REPO provides multiple values, none match';
+							foreach ( $repo_hash as $item ) {
+								if ( $local_file['file_hash'] == $item ) {
+									$hash_match = 1;
+									$file_hash_repo = $item;
+									break;
+								}
+							}
+						}
+						else {
+							$file_hash_repo = $repo_hash;
+							if ( $local_file['file_hash'] == $repo_hash ) {
+								$hash_match = 1;
 							}
 						}
 					}
 					else {
-						$file_hash_repo = $repo_hash;
-						if ( $local_file['file_hash'] == $repo_hash ) {
-							$hash_match = 1;
-						}
+						$file_hash_repo = 'SHA256 hash not found';
 					}
+
+					$status = ( $hash_match ) ? CERBER_FOK : CERBER_IMD;
+
+					if ( $status > CERBER_FOK ) {
+						$issues[] = array( $status, $short_name, 'file' => $local_file );
+					}
+
+					cerber_db_query( 'UPDATE ' . cerber_get_db_prefix() . CERBER_SCAN_TABLE . ' SET file_hash_repo = "' . $file_hash_repo . '", hash_match = ' . $hash_match . ', scan_status = ' . $status . ' WHERE ' . $where );
+
+					$file_count ++;
+					$bytes += absint( $local_file['file_size'] );
+
 				}
-				else {
-					$file_hash_repo = 'SHA256 hash not found';
-				}
 
-				$status = ( $hash_match ) ? CERBER_FOK : CERBER_IMD;
-
-				if ( $status > CERBER_FOK ) {
-					$issues[] = array( $status, $short_name, 'file' => $local_file );
-				}
-
-				cerber_db_query( 'UPDATE ' . cerber_get_db_prefix() . CERBER_SCAN_TABLE . ' SET file_hash_repo = "' . $file_hash_repo . '", hash_match = ' . $hash_match . ', scan_status = ' . $status . ' WHERE ' . $where );
-
-				$file_count ++;
-				$bytes += absint( $local_file['file_size'] );
-
+				$verified = 1;
 			}
-
-			$verified = 1;
-		}
-		else {
-			$verified = cerber_verify_plugin( $plugin_folder, $plugins[ $plugin ] );
+			else {
+				$verified = cerber_verify_plugin( $plugin_folder, $plugins[ $plugin ] );
+			}
 		}
 
 		if ( ! $verified ) {
@@ -1932,16 +1941,15 @@ function cerber_verify_plugins( &$progress ) {
 }
 
 /**
- * Checking the integrity of a plugin if there is no hash on wordpress.org
+ * Verifying the integrity of a plugin if there is no hash on wordpress.org
  *
  * @param string $plugin_folder Just folder, no full path, no slashes
  * @param array $plugin_data
+ * @param bool $local_only If true, try to verify with local hash only; otherwise, try to load hash from my.wpcerber.com
  *
- * @return bool If true the plugin was verified by using an alternative source of hash
+ * @return bool If true, the plugin was verified
  */
-function cerber_verify_plugin( $plugin_folder, $plugin_data ) {
-	$ret  = false;
-	$hash = null;
+function cerber_verify_plugin( $plugin_folder, $plugin_data, $local_only = false ) {
 
 	// Is there local hash?
 
@@ -1950,6 +1958,10 @@ function cerber_verify_plugin( $plugin_folder, $plugin_data ) {
 	// Possibly remote hash?
 
 	if ( ! $hash ) {
+
+		if ( $local_only ) {
+			return false;
+		}
 
 		$hash_url = null;
 
@@ -1977,6 +1989,8 @@ function cerber_verify_plugin( $plugin_folder, $plugin_data ) {
 			}
 		}
 	}
+
+	$ret = false;
 
 	if ( $hash ) {
 		crb_scan_debug( 'Using local hash...' );
@@ -3636,18 +3650,6 @@ function cerber_check_extension( $filename, $ext_list = array(), $single = false
 		return false;
 	}
 
-	//$d = cerber_detect_exec_extension();
-
-	//$filename = cerber_mb_basename( $filename );
-
-	/*$pos = mb_strpos( $filename, '.' );
-	if ( $pos === false ) {
-		return false;
-	}
-
-	$ext = mb_substr( $filename, $pos + 1 );
-	$ext = strtolower( $ext );*/
-
 	$ext = cerber_get_extension( $filename );
 
 	if ( ! $ext ) {
@@ -3670,7 +3672,7 @@ function cerber_check_extension( $filename, $ext_list = array(), $single = false
 		return false;
 	}
 
-	$last = mb_substr( $ext, mb_strpos( $ext, '.' ) + 1 );
+	$last = mb_substr( $ext, mb_strrpos( $ext, '.' ) + 1 );
 	if ( in_array( $last, $ext_list ) ) {
 		return true;
 	}
@@ -4189,43 +4191,57 @@ function cerber_detect_object( $folder = '' ) {
 		$single = false;
 	}
 	else {
-	    $single = true;
-    }
+		$single = true;
+	}
 
 	if ( ! $files ) {
-		return false;
+		return new WP_Error( 'cerber-file', 'No PHP files found in the archive.' );
 	}
 
 	require_once( ABSPATH . 'wp-admin/includes/plugin.php' );
-	$plugins = get_plugins();
+	$installed_plugins = get_plugins();
+
+	$name_found = false;
 
 	foreach ( $files as $file_name ) {
 		$plugin_data = get_plugin_data( $file_name );
-		if ( ! empty ( $plugin_data['Name'] ) && ! empty ( $plugin_data['Version'] ) ) {
-			$name = htmlspecialchars_decode( $plugin_data['Name'] ); // get_plugins() != get_plugin_data()
-			foreach ( $plugins as $key => $plugin ) {
-				if ( $plugin['Name'] == $name ) {
-					if ( $plugin['Version'] == $plugin_data['Version'] ) {
+		if ( empty ( $plugin_data['Name'] ) || empty ( $plugin_data['Version'] ) ) {
+			continue;
+		}
 
-						return array(
-							'type'   => CRB_HASH_PLUGIN,
-							'name'   => $name,
-							'ver'    => $plugin_data['Version'],
-							'data'   => $plugin_data,
-							'src'    => dirname( $file_name ),
-							'single' => $single,
-							'file'   => $file_name
-						);
-					}
+		$name_found = true;
 
-					return new WP_Error( 'cerber-file', 'Plugin version mismatch.' );
+		$name = htmlspecialchars_decode( $plugin_data['Name'] ); // get_plugins() != get_plugin_data()
+
+		foreach ( $installed_plugins as $key => $plugin ) {
+			if ( $plugin['Name'] == $name ) {
+				if ( $plugin['Version'] == $plugin_data['Version'] ) {
+
+					return array(
+						'type'   => CRB_HASH_PLUGIN,
+						'name'   => $name,
+						'ver'    => $plugin_data['Version'],
+						'data'   => $plugin_data,
+						'src'    => dirname( $file_name ),
+						'single' => $single,
+						'file'   => $file_name
+					);
 				}
+
+				return new WP_Error( 'cerber-file', 'Plugin version mismatch.' );
 			}
 		}
+
 	}
 
+	if ( $name_found ) {
+		$err = 'No matching plugin name was found among installed plugins.';
+	}
+	else {
+		$err = 'No files in the uploaded archive contain a valid plugin name.';
+	}
 
-	return false;
+	return new WP_Error( 'cerber-file', $err );
 }
 
 /**
